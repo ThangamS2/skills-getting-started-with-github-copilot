@@ -54,8 +54,38 @@ document.addEventListener("DOMContentLoaded", () => {
           span.className = "participant-name";
           span.textContent = p;
 
+          // Delete/unregister button
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "participant-delete";
+          btn.title = `Unregister ${p}`;
+          btn.setAttribute("aria-label", `Unregister ${p}`);
+          btn.innerHTML = "&times;"; // simple cross icon
+
+          btn.addEventListener("click", async (ev) => {
+            ev.stopPropagation();
+            const confirmed = confirm(`Unregister ${p} from ${name}?`);
+            if (!confirmed) return;
+            try {
+              const url = `/activities/${encodeURIComponent(name)}/unregister?email=${encodeURIComponent(p)}`;
+              const res = await fetch(url, { method: "POST" });
+              if (!res.ok) {
+                const err = await res.json().catch(() => ({ detail: "Failed to unregister" }));
+                showMessage(err.detail || "Failed to unregister", "error");
+                return;
+              }
+              const body = await res.json().catch(() => ({}));
+              showMessage(body.message || "Unregistered successfully", "success");
+              // Refresh activities to update participants list
+              await loadActivities();
+            } catch (err) {
+              showMessage("Network error while unregistering.", "error");
+            }
+          });
+
           li.appendChild(img);
           li.appendChild(span);
+          li.appendChild(btn);
           ul.appendChild(li);
         });
         participantsWrap.appendChild(ul);
